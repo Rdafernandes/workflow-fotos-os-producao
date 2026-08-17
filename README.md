@@ -187,7 +187,7 @@ As quatro capturas mostram a topologia completa dos workflows, com nomes dos nó
 
 ![Workflow 4 — reconciliação do Google Drive](assets/screenshots/workflow-4-reconciliacao-drive.png)
 
-Os parâmetros relevantes que não aparecem no canvas estão descritos na [documentação técnica](docs/README.md). Não são necessárias capturas internas dos nós.
+Os parâmetros relevantes que não aparecem no canvas estão descritos na [documentação técnica](docs/README.md).
 
 ## Escopo público
 
