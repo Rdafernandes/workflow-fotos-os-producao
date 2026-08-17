@@ -1,0 +1,9 @@
+{
+  "action": "ask_required",
+  "target_pending_id": "00000000-0000-4000-8000-000000000010",
+  "batch_key": "demo-batch-001",
+  "chat_id": "DEMO_GROUP_ID@g.us",
+  "target_wa_message_id": "DEMO_MESSAGE_ID",
+  "message_text": "Qual OS?"
+}
+

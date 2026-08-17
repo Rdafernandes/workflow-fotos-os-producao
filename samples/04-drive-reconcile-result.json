@@ -1,0 +1,15 @@
+{
+  "queue_id": "00000000-0000-4000-8000-000000000020",
+  "reconcile_action": "rename_only_then_mark_done",
+  "reconcile_reason": "file_already_in_target_with_wrong_name",
+  "drive_snapshot": {
+    "id": "DEMO_FILE_ID",
+    "name": "upload-original.jpg",
+    "parents": ["DEMO_TARGET_FOLDER_ID"],
+    "trashed": false
+  },
+  "drive_in_source": false,
+  "drive_in_target": true,
+  "drive_name_correct": false
+}
+

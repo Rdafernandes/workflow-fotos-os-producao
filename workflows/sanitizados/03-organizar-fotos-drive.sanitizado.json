@@ -1,0 +1,647 @@
+{
+  "name": "3_ORGANIZAR_FOTOS_DRIVE",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const jobs = Array.isArray($json.jobs) ? $json.jobs : [];\n\nreturn jobs.map(job => ({\n  json: job\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ],
+      "name": "Code | Extrair Job"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{$json.drive_file_id}}?addParents={{$json.target_folder_id}}&removeParents={{$json.source_folder_id}}&supportsAllDrives=true&fields=id,name,parents,trashed",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{$json.target_filename}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        640,
+        0
+      ],
+      "name": "Google Drive | Move + Rename",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_drive_move_mark_done_prod_candidate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_queue_id\": \"{{ $('Code | Extrair Job').item.json.id }}\",\n  \"p_allow_production\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        944,
+        -96
+      ],
+      "name": "Supabase | Mark Done"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_drive_move_mark_error_prod_candidate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_queue_id\": \"{{ $('Code | Extrair Job').item.json.id }}\",\n  \"p_error\": \"{{ JSON.stringify($json) }}\",\n  \"p_allow_production\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        944,
+        112
+      ],
+      "name": "Supabase | Mark Error"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_drive_move_claim_prod_candidate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_limit\": 10,\n  \"p_allow_production\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
+      "name": "Supabase | Claim Jobs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_drive_folder_needs_prod_candidate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_limit\": 20,\n  \"p_allow_production\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -288,
+        -16
+      ],
+      "name": "Supabase | Pastas faltantes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needs_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        -16
+      ],
+      "name": "IF | Há pastas faltantes?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const needs = Array.isArray($json.needs) ? $json.needs : [];\n\nreturn needs.map(folder => ({\n  json: folder\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -336
+      ],
+      "name": "Code | Extrair Pastas"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "='{{ $json.day_folder_id }}' in parents and name='{{ $json.target_folder_name }}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,parents)"
+            },
+            {
+              "name": "pageSize",
+              "value": "10"
+            },
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            },
+            {
+              "name": "includeItemsFromAllDrives",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        432,
+        -336
+      ],
+      "name": "Drive | Procurar Pasta OS"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ Array.isArray($json.files) && $json.files.length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        -336
+      ],
+      "name": "IF | Pasta existe?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            },
+            {
+              "name": "fields",
+              "value": "id,name,parents"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('Code | Extrair Pastas').item.json.target_folder_name }}\",\n  \"mimeType\": \"application/vnd.google-apps.folder\",\n  \"parents\": [\n    \"{{ $('Code | Extrair Pastas').item.json.day_folder_id }}\"\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        944,
+        -320
+      ],
+      "name": "Drive | Criar Pasta"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    day_folder_id:\n      $('Code | Extrair Pastas').item.json.day_folder_id,\n\n    target_os_numero:\n      $('Code | Extrair Pastas').item.json.target_os_numero,\n\n    target_folder_name:\n      $('Code | Extrair Pastas').item.json.target_folder_name,\n\n    drive_folder_id:\n      $json.id,\n\n    folder_origin:\n      'created'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -320
+      ],
+      "name": "Code | Usar Criada"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const folder = $json.files?.[0];\n\nif (!folder?.id) {\n  throw new Error(\n    'Pasta encontrada sem drive folder id'\n  );\n}\n\nreturn {\n  json: {\n    day_folder_id:\n      $('Code | Extrair Pastas').item.json.day_folder_id,\n\n    target_os_numero:\n      $('Code | Extrair Pastas').item.json.target_os_numero,\n\n    target_folder_name:\n      $('Code | Extrair Pastas').item.json.target_folder_name,\n\n    drive_folder_id:\n      folder.id,\n\n    folder_origin:\n      'existing'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -512
+      ],
+      "name": "Code | Usar Existente"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_drive_folder_register_prod_candidate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_day_folder_id\": \"{{ $json.day_folder_id }}\",\n  \"p_os_numero\": \"{{ $json.target_os_numero }}\",\n  \"p_drive_folder_id\": \"{{ $json.drive_folder_id }}\",\n  \"p_allow_production\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -432
+      ],
+      "name": "Supabase | Registrar Pasta"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ok: true,\n    folder_registration_count: items.length,\n    folder_results: items.map(item => item.json)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        -336
+      ],
+      "name": "Code | Finalizar Pastas"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -528,
+        -16
+      ],
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        -208
+      ],
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "connections": {
+    "Code | Extrair Job": {
+      "main": [
+        [
+          {
+            "node": "Google Drive | Move + Rename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive | Move + Rename": {
+      "main": [
+        [
+          {
+            "node": "Supabase | Mark Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase | Mark Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase | Claim Jobs": {
+      "main": [
+        [
+          {
+            "node": "Code | Extrair Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase | Pastas faltantes": {
+      "main": [
+        [
+          {
+            "node": "IF | Há pastas faltantes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF | Há pastas faltantes?": {
+      "main": [
+        [
+          {
+            "node": "Code | Extrair Pastas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase | Claim Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code | Extrair Pastas": {
+      "main": [
+        [
+          {
+            "node": "Drive | Procurar Pasta OS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive | Procurar Pasta OS": {
+      "main": [
+        [
+          {
+            "node": "IF | Pasta existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF | Pasta existe?": {
+      "main": [
+        [
+          {
+            "node": "Code | Usar Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Drive | Criar Pasta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive | Criar Pasta": {
+      "main": [
+        [
+          {
+            "node": "Code | Usar Criada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code | Usar Existente": {
+      "main": [
+        [
+          {
+            "node": "Supabase | Registrar Pasta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code | Usar Criada": {
+      "main": [
+        [
+          {
+            "node": "Supabase | Registrar Pasta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase | Registrar Pasta": {
+      "main": [
+        [
+          {
+            "node": "Code | Finalizar Pastas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code | Finalizar Pastas": {
+      "main": [
+        [
+          {
+            "node": "Supabase | Claim Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Supabase | Pastas faltantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Supabase | Pastas faltantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  }
+}

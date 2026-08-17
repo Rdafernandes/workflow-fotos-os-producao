@@ -1,0 +1,343 @@
+{
+  "name": "1_OS_PHOTO_EVIDENCE_CAPTURE",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "os-photo-evidence-capture",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_evidence_process_message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_message_row_id\": \"{{ $json.body.message_row_id }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
+      "name": "RPC | Processar mensagem OS Photo Evidence"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "pending_created_waiting_followup",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        0
+      ],
+      "name": "IF | Precisa aguardar OS?"
+    },
+    {
+      "parameters": {
+        "amount": 600
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        752,
+        -192
+      ],
+      "name": "Wait | Aguardar texto posterior"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_evidence_claim_ask",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_batch_key\": \"{{ $('RPC | Processar mensagem OS Photo Evidence').item.json.batch_key }}\",\n  \"p_allow_production\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        -192
+      ],
+      "name": "RPC | Claim pergunta Qual OS"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "ask_required",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1168,
+        -192
+      ],
+      "name": "IF | Deve perguntar Qual OS?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/text",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.WHAPI_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $('RPC | Claim pergunta Qual OS').item.json.chat_id }}\",\n  \"quoted\": \"{{ $('RPC | Claim pergunta Qual OS').item.json.target_wa_message_id }}\",\n  \"body\": \"{{ $('RPC | Claim pergunta Qual OS').item.json.message_text }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1472,
+        -400
+      ],
+      "name": "WHAPI | Enviar quote Qual OS",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/os_photo_evidence_mark_ask_sent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_target_pending_id\": \"{{ $('RPC | Claim pergunta Qual OS').item.json.target_pending_id }}\",\n  \"p_ask_wa_message_id\": \"{{ $json.id || $json.message_id || $json.message?.id || $json.messages?.[0]?.id || null }}\",\n  \"p_send_response\": {{ JSON.stringify($json) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1728,
+        -400
+      ],
+      "name": "RPC | Marcar pergunta enviada"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "RPC | Processar mensagem OS Photo Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC | Processar mensagem OS Photo Evidence": {
+      "main": [
+        [
+          {
+            "node": "IF | Precisa aguardar OS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF | Precisa aguardar OS?": {
+      "main": [
+        [
+          {
+            "node": "Wait | Aguardar texto posterior",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait | Aguardar texto posterior": {
+      "main": [
+        [
+          {
+            "node": "RPC | Claim pergunta Qual OS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC | Claim pergunta Qual OS": {
+      "main": [
+        [
+          {
+            "node": "IF | Deve perguntar Qual OS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF | Deve perguntar Qual OS?": {
+      "main": [
+        [
+          {
+            "node": "WHAPI | Enviar quote Qual OS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WHAPI | Enviar quote Qual OS": {
+      "main": [
+        [
+          {
+            "node": "RPC | Marcar pergunta enviada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  }
+}
