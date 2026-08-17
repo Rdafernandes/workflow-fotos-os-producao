@@ -1,0 +1,16 @@
+# Arquivos locais e segredos
+.env
+.env.*
+*.log
+credentials/
+secrets/
+
+# Sistema e editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Exports não sanitizados
+workflows/originais/
+*.production.json
